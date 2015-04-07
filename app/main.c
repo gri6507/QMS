@@ -7,6 +7,8 @@
 #include "serial.h"
 #include <sys/alt_irq.h>     // for interrupt disable
 
+#define NIOS_VERSION 0x00000001
+
 static void ExecuteCmd(const char const *input, const u32 base)
 {
     SendStr("\r\n", base);
@@ -98,6 +100,18 @@ static void ExecuteCmd(const char const *input, const u32 base)
                 else
                     SendStr(NO_ANSWER, base);
             }
+            break;
+        
+        case 'V':
+            SendStr("Y", base);
+            char versionStr[9];
+            FpgaRegisters * FPGARegs = (FpgaRegisters *)(CONTROL_STATUS_REGISTERS_BASE | BYPASS_DCACHE_MASK);
+            U32ToStr(FPGARegs->fpgaVersion, versionStr);
+            SendStr(versionStr, base);
+            SendStr(" ", base);
+            U32ToStr(NIOS_VERSION, versionStr);
+            SendStr(versionStr, base);
+            SendStr("\r\n", base);
             break;
             
         default:
