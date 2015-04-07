@@ -77,7 +77,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
                 u32 regValue;
                 if (StrToU32(token[1], &regAddr) && RegRead(regAddr, &regValue))
                 {
-                    SendStr("Y 0x", base);
+                    SendStr("Y ", base);
                     char regValStr[9];
                     U32ToStr(regValue, regValStr);
                     SendStr(regValStr, base);

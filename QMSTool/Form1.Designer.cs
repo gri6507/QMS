@@ -109,6 +109,7 @@
             this.buttonWriteRegister.TabIndex = 3;
             this.buttonWriteRegister.Text = "Write";
             this.buttonWriteRegister.UseVisualStyleBackColor = true;
+            this.buttonWriteRegister.Click += new System.EventHandler(this.buttonWriteRegister_Click);
             // 
             // buttonReadRegister
             // 
@@ -130,6 +131,7 @@
             this.buttonReadAllRegisters.TabIndex = 1;
             this.buttonReadAllRegisters.Text = "Read All Registers";
             this.buttonReadAllRegisters.UseVisualStyleBackColor = true;
+            this.buttonReadAllRegisters.Click += new System.EventHandler(this.buttonReadAllRegisters_Click);
             // 
             // richTextBoxInfo
             // 
