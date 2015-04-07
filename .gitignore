@@ -22,3 +22,6 @@
 /.metadata
 /bsp/libhal_bsp.a
 /app/obj
+/QMSTool/*.suo
+/QMSTool/bin
+/QMSTool/obj
