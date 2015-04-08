@@ -50,3 +50,12 @@ ExecuteCmd cd app
 ExecuteCmd ${SCRIPTPATH}/colormake.sh clean
 export CFLAGS="-Werror -Wall"
 ExecuteCmd ${SCRIPTPATH}/colormake.sh
+
+# build the combined flash file
+ExecuteCmd sof2flash --verbose --epcs --input="../qsys/QMS_FPGA.sof" --output="Fpga.flash"
+ExecuteCmd elf2flash --verbose --epcs --after="Fpga.flash" --input="app.elf" --output="Nios.flash"
+ExecuteCmd nios2-elf-objcopy -I srec -O binary Fpga.flash Fpga.bin
+ExecuteCmd nios2-elf-objcopy -I srec -O binary Nios.flash Nios.bin
+cat Fpga.bin Nios.bin > QMS.BIN
+ExecuteCmd rm Fpga.flash Nios.flash Fpga.bin Nios.bin
+

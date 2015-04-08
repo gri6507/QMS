@@ -24,3 +24,4 @@
 /app/obj
 /QMSTool/*.suo
 /QMSTool/obj
+/app/*.BIN
