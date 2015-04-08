@@ -32,6 +32,12 @@ namespace QMSTool
             ScanForFtdiDevices();
         }
 
+        public override sealed string Text
+        {
+            get { return base.Text; }
+            set { base.Text = value; }
+        }
+
         private void ScanForFtdiDevices()
         {
             FtdiDeviceInfoStruct[] devices = FTDI.GetDeviceInfoList();
@@ -84,6 +90,9 @@ namespace QMSTool
         private String SendCmdGetResponse(String cmd)
         {
             String ans = String.Empty;
+
+            // Send the command
+            _uart.WriteLine(cmd);
 
             // Get the echo 
             String line = _uart.ReadLineTimeout(1000);
@@ -167,6 +176,10 @@ namespace QMSTool
                     {
                         WriteLine("Error writing register " + regAddr.ToString("x3"));
                     }
+                    else
+                    {
+                        WriteLine(_registers[regAddr] + " = " + regValue);
+                    }
                 }
                 catch (FormatException)
                 {
@@ -186,6 +199,76 @@ namespace QMSTool
                     WriteLine(reg.Value + " = " + regValue);
                 }
             }
+        }
+
+        private void buttonUpdateFirmware_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog
+            {
+                Filter = @"Firmware (*.BIN)|*.BIN|All Files (*.*)|*.*",
+                FilterIndex = 1
+            };
+
+            if (ofd.ShowDialog(this) != DialogResult.OK)
+            {
+                WriteLine("Firmware update aborted by user");
+                return;
+            }
+
+            bool success = false;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+
+                String filename = ofd.FileName;
+                byte[] data = File.ReadAllBytes(filename);
+
+                const int chunkSize = 4*1024;
+                int dataIndex = 0;
+                bool haveFailure = false;
+                while (dataIndex < data.Length)
+                {
+                    int numBytesInChunk = 0;
+                    UInt32 chunkChecksum = 0;
+                    while (((dataIndex + numBytesInChunk) < data.Length) && (numBytesInChunk < chunkSize))
+                    {
+                        chunkChecksum += data[dataIndex + numBytesInChunk];
+                        numBytesInChunk++;
+                    }
+
+                    // Request to send the chunk 
+                    String cmd = String.Format("F {0:x} {1:x} {2:x}\n", dataIndex, numBytesInChunk, chunkChecksum);
+                    String answer = SendCmdGetResponse(cmd);
+                    if (!answer.StartsWith("Y"))
+                    {
+                        haveFailure = true;
+                        break;
+                    }
+
+                    // We can now send the chunk
+                    for (int i = 0; i < numBytesInChunk; i++)
+                    {
+                        _uart.Write(data[dataIndex++]);
+                    }
+
+                    // Verify the response
+                    answer = _uart.ReadLineTimeout(1000);
+                    if (!answer.StartsWith("Y"))
+                    {
+                        haveFailure = true;
+                        break;
+                    }
+                }
+
+                if (false == haveFailure)
+                    success = true;
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            WriteLine(success ? "Firmware update complete. Restart device!" : "Firmware update failed!");
         }
 
         private bool WriteRegister(uint regAddr, uint regValue)
@@ -257,7 +340,7 @@ namespace QMSTool
 
         public void WriteLine(String s)
         {
-            richTextBoxInfo.AppendText(s);
+            richTextBoxInfo.AppendText(s + Environment.NewLine);
             richTextBoxInfo.ScrollToCaret();
         }
     }

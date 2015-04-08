@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.groupBoxCommunication = new System.Windows.Forms.GroupBox();
+            this.buttonVersion = new System.Windows.Forms.Button();
             this.textBoxRegValue = new System.Windows.Forms.TextBox();
             this.textBoxRegAddr = new System.Windows.Forms.TextBox();
             this.labelRegValue = new System.Windows.Forms.Label();
@@ -40,7 +41,7 @@
             this.comboBoxFtdiDevice = new System.Windows.Forms.ComboBox();
             this.buttonConnect = new System.Windows.Forms.Button();
             this.buttonDisconnect = new System.Windows.Forms.Button();
-            this.buttonVersion = new System.Windows.Forms.Button();
+            this.buttonUpdateFirmware = new System.Windows.Forms.Button();
             this.groupBoxCommunication.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -48,6 +49,7 @@
             // 
             this.groupBoxCommunication.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxCommunication.Controls.Add(this.buttonUpdateFirmware);
             this.groupBoxCommunication.Controls.Add(this.buttonVersion);
             this.groupBoxCommunication.Controls.Add(this.textBoxRegValue);
             this.groupBoxCommunication.Controls.Add(this.textBoxRegAddr);
@@ -61,14 +63,25 @@
             this.groupBoxCommunication.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.groupBoxCommunication.Name = "groupBoxCommunication";
             this.groupBoxCommunication.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBoxCommunication.Size = new System.Drawing.Size(204, 220);
+            this.groupBoxCommunication.Size = new System.Drawing.Size(204, 371);
             this.groupBoxCommunication.TabIndex = 3;
             this.groupBoxCommunication.TabStop = false;
             this.groupBoxCommunication.Text = "Communication";
             // 
+            // buttonVersion
+            // 
+            this.buttonVersion.Location = new System.Drawing.Point(56, 28);
+            this.buttonVersion.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.buttonVersion.Name = "buttonVersion";
+            this.buttonVersion.Size = new System.Drawing.Size(89, 28);
+            this.buttonVersion.TabIndex = 8;
+            this.buttonVersion.Text = "Version";
+            this.buttonVersion.UseVisualStyleBackColor = true;
+            this.buttonVersion.Click += new System.EventHandler(this.buttonVersion_Click);
+            // 
             // textBoxRegValue
             // 
-            this.textBoxRegValue.Location = new System.Drawing.Point(102, 191);
+            this.textBoxRegValue.Location = new System.Drawing.Point(105, 223);
             this.textBoxRegValue.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.textBoxRegValue.Name = "textBoxRegValue";
             this.textBoxRegValue.Size = new System.Drawing.Size(89, 22);
@@ -76,7 +89,7 @@
             // 
             // textBoxRegAddr
             // 
-            this.textBoxRegAddr.Location = new System.Drawing.Point(8, 191);
+            this.textBoxRegAddr.Location = new System.Drawing.Point(11, 223);
             this.textBoxRegAddr.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.textBoxRegAddr.Name = "textBoxRegAddr";
             this.textBoxRegAddr.Size = new System.Drawing.Size(89, 22);
@@ -85,7 +98,7 @@
             // labelRegValue
             // 
             this.labelRegValue.AutoSize = true;
-            this.labelRegValue.Location = new System.Drawing.Point(130, 171);
+            this.labelRegValue.Location = new System.Drawing.Point(133, 203);
             this.labelRegValue.Name = "labelRegValue";
             this.labelRegValue.Size = new System.Drawing.Size(42, 17);
             this.labelRegValue.TabIndex = 5;
@@ -94,7 +107,7 @@
             // labelRegOffset
             // 
             this.labelRegOffset.AutoSize = true;
-            this.labelRegOffset.Location = new System.Drawing.Point(22, 171);
+            this.labelRegOffset.Location = new System.Drawing.Point(25, 203);
             this.labelRegOffset.Name = "labelRegOffset";
             this.labelRegOffset.Size = new System.Drawing.Size(68, 17);
             this.labelRegOffset.TabIndex = 4;
@@ -102,7 +115,7 @@
             // 
             // buttonWriteRegister
             // 
-            this.buttonWriteRegister.Location = new System.Drawing.Point(102, 141);
+            this.buttonWriteRegister.Location = new System.Drawing.Point(105, 173);
             this.buttonWriteRegister.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.buttonWriteRegister.Name = "buttonWriteRegister";
             this.buttonWriteRegister.Size = new System.Drawing.Size(93, 28);
@@ -113,7 +126,7 @@
             // 
             // buttonReadRegister
             // 
-            this.buttonReadRegister.Location = new System.Drawing.Point(8, 141);
+            this.buttonReadRegister.Location = new System.Drawing.Point(11, 173);
             this.buttonReadRegister.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.buttonReadRegister.Name = "buttonReadRegister";
             this.buttonReadRegister.Size = new System.Drawing.Size(89, 28);
@@ -124,7 +137,7 @@
             // 
             // buttonReadAllRegisters
             // 
-            this.buttonReadAllRegisters.Location = new System.Drawing.Point(25, 97);
+            this.buttonReadAllRegisters.Location = new System.Drawing.Point(28, 129);
             this.buttonReadAllRegisters.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.buttonReadAllRegisters.Name = "buttonReadAllRegisters";
             this.buttonReadAllRegisters.Size = new System.Drawing.Size(148, 28);
@@ -142,7 +155,7 @@
             this.richTextBoxInfo.Location = new System.Drawing.Point(222, 43);
             this.richTextBoxInfo.Name = "richTextBoxInfo";
             this.richTextBoxInfo.ReadOnly = true;
-            this.richTextBoxInfo.Size = new System.Drawing.Size(605, 404);
+            this.richTextBoxInfo.Size = new System.Drawing.Size(605, 420);
             this.richTextBoxInfo.TabIndex = 4;
             this.richTextBoxInfo.Text = "";
             // 
@@ -180,16 +193,16 @@
             this.buttonDisconnect.UseVisualStyleBackColor = true;
             this.buttonDisconnect.Click += new System.EventHandler(this.buttonDisconnect_Click);
             // 
-            // buttonVersion
+            // buttonUpdateFirmware
             // 
-            this.buttonVersion.Location = new System.Drawing.Point(56, 28);
-            this.buttonVersion.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.buttonVersion.Name = "buttonVersion";
-            this.buttonVersion.Size = new System.Drawing.Size(89, 28);
-            this.buttonVersion.TabIndex = 8;
-            this.buttonVersion.Text = "Version";
-            this.buttonVersion.UseVisualStyleBackColor = true;
-            this.buttonVersion.Click += new System.EventHandler(this.buttonVersion_Click);
+            this.buttonUpdateFirmware.Location = new System.Drawing.Point(56, 306);
+            this.buttonUpdateFirmware.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.buttonUpdateFirmware.Name = "buttonUpdateFirmware";
+            this.buttonUpdateFirmware.Size = new System.Drawing.Size(89, 61);
+            this.buttonUpdateFirmware.TabIndex = 9;
+            this.buttonUpdateFirmware.Text = "Update Firmware";
+            this.buttonUpdateFirmware.UseVisualStyleBackColor = true;
+            this.buttonUpdateFirmware.Click += new System.EventHandler(this.buttonUpdateFirmware_Click);
             // 
             // QMSTool
             // 
@@ -224,6 +237,7 @@
         private System.Windows.Forms.Button buttonConnect;
         private System.Windows.Forms.Button buttonDisconnect;
         private System.Windows.Forms.Button buttonVersion;
+        private System.Windows.Forms.Button buttonUpdateFirmware;
 
     }
 }

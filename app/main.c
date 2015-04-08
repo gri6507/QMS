@@ -5,6 +5,7 @@
 #include "stdhdr.h"
 #include "fpga.h"
 #include "serial.h"
+#include "epcs_driver.h"
 #include <sys/alt_irq.h>     // for interrupt disable
 
 #define NIOS_VERSION 0x00000001
@@ -14,7 +15,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
     SendStr("\r\n", base);
     
     // Tokenize the command
-    #define MAX_CMD_WORDS 3
+    #define MAX_CMD_WORDS 4
     char *token[MAX_CMD_WORDS];
     char *cmd = (char *)input;
     u8 numTokens = 0;
@@ -69,6 +70,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
     switch (token[0][0])
     {
         case 'R':
+        {
             if (2 != numTokens)
                 SendStr(NO_ANSWER, base);
             else
@@ -87,8 +89,10 @@ static void ExecuteCmd(const char const *input, const u32 base)
                     SendStr(NO_ANSWER, base);
             }
             break;
+        }
             
         case 'W':
+        {
             if (3 != numTokens)
                 SendStr(NO_ANSWER, base);
             else
@@ -101,8 +105,10 @@ static void ExecuteCmd(const char const *input, const u32 base)
                     SendStr(NO_ANSWER, base);
             }
             break;
+        }
         
         case 'V':
+        {
             SendStr("Y", base);
             char versionStr[9];
             FpgaRegisters * FPGARegs = (FpgaRegisters *)(CONTROL_STATUS_REGISTERS_BASE | BYPASS_DCACHE_MASK);
@@ -113,6 +119,62 @@ static void ExecuteCmd(const char const *input, const u32 base)
             SendStr(versionStr, base);
             SendStr("\r\n", base);
             break;
+        }
+
+        case 'F':
+        {
+            if (3 != numTokens)
+                SendStr(NO_ANSWER, base);
+            else
+            {
+                u32 startAddr;
+                u32 length;
+                u32 checksum;
+                StrToU32(token[1], &startAddr);
+                StrToU32(token[2], &length);
+                StrToU32(token[3], &checksum);
+
+                // Define the maximum transfer size as the subsector size for
+                // the EPCS part. This will get the most efficiency
+                #define MAX_TRANSFER_SIZE (SERIAL_FLASH_WORDS_PER_SUBSECTOR)
+                u8  buffer[MAX_TRANSFER_SIZE];
+                u32 bufferIndex = 0;
+                u32 runningSum = 0;
+
+                // Validate the requested transfer size against our buffer size
+                if (length > MAX_TRANSFER_SIZE)
+                    SendStr(NO_ANSWER, base);
+                else
+                {
+                    // Acknowledge that the command is good. This will tell the
+                    // sender to actually send the specified number of bytes
+                    SendStr("Y\r\n", base);
+
+                    // TODO - it would be nice to add a timeout over here
+                    while (IORD_FIFOED_AVALON_UART_STATUS(FIFOED_UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                    {
+                        // Read the Uart
+                        u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(FIFOED_UART_BASE);
+                        runningSum += rx;
+                        buffer[bufferIndex++] = rx;
+                        if (bufferIndex >= length)
+                            break;
+                    }
+
+                    // check the checksum
+                    if (runningSum != checksum)
+                        SendStr(NO_ANSWER, base);
+                    else
+                    {
+                        alt_flash_fd* fd = EPCS_OpenFlash(SERIAL_FLASH_NAME);
+                        if (0 == EPCS_WriteFlash(fd, startAddr, (u32)buffer, length))
+                            SendStr("Y\r\n", base);
+                        else
+                            SendStr(NO_ANSWER, base);
+                    }
+                }
+            }
+        }
             
         default:
             SendStr(NO_ANSWER, base);
