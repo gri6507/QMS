@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.groupBoxCommunication = new System.Windows.Forms.GroupBox();
+            this.buttonUpdateFirmware = new System.Windows.Forms.Button();
             this.buttonVersion = new System.Windows.Forms.Button();
             this.textBoxRegValue = new System.Windows.Forms.TextBox();
             this.textBoxRegAddr = new System.Windows.Forms.TextBox();
@@ -41,13 +42,14 @@
             this.comboBoxFtdiDevice = new System.Windows.Forms.ComboBox();
             this.buttonConnect = new System.Windows.Forms.Button();
             this.buttonDisconnect = new System.Windows.Forms.Button();
-            this.buttonUpdateFirmware = new System.Windows.Forms.Button();
+            this.groupBoxIo = new System.Windows.Forms.GroupBox();
             this.groupBoxCommunication.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBoxCommunication
             // 
-            this.groupBoxCommunication.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.groupBoxCommunication.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+                        | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBoxCommunication.Controls.Add(this.buttonUpdateFirmware);
             this.groupBoxCommunication.Controls.Add(this.buttonVersion);
@@ -63,10 +65,21 @@
             this.groupBoxCommunication.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.groupBoxCommunication.Name = "groupBoxCommunication";
             this.groupBoxCommunication.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBoxCommunication.Size = new System.Drawing.Size(204, 371);
+            this.groupBoxCommunication.Size = new System.Drawing.Size(204, 422);
             this.groupBoxCommunication.TabIndex = 3;
             this.groupBoxCommunication.TabStop = false;
             this.groupBoxCommunication.Text = "Communication";
+            // 
+            // buttonUpdateFirmware
+            // 
+            this.buttonUpdateFirmware.Location = new System.Drawing.Point(56, 306);
+            this.buttonUpdateFirmware.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.buttonUpdateFirmware.Name = "buttonUpdateFirmware";
+            this.buttonUpdateFirmware.Size = new System.Drawing.Size(89, 61);
+            this.buttonUpdateFirmware.TabIndex = 9;
+            this.buttonUpdateFirmware.Text = "Update Firmware";
+            this.buttonUpdateFirmware.UseVisualStyleBackColor = true;
+            this.buttonUpdateFirmware.Click += new System.EventHandler(this.buttonUpdateFirmware_Click);
             // 
             // buttonVersion
             // 
@@ -155,7 +168,7 @@
             this.richTextBoxInfo.Location = new System.Drawing.Point(222, 43);
             this.richTextBoxInfo.Name = "richTextBoxInfo";
             this.richTextBoxInfo.ReadOnly = true;
-            this.richTextBoxInfo.Size = new System.Drawing.Size(605, 420);
+            this.richTextBoxInfo.Size = new System.Drawing.Size(698, 472);
             this.richTextBoxInfo.TabIndex = 4;
             this.richTextBoxInfo.Text = "";
             // 
@@ -167,7 +180,7 @@
             this.comboBoxFtdiDevice.FormattingEnabled = true;
             this.comboBoxFtdiDevice.Location = new System.Drawing.Point(107, 12);
             this.comboBoxFtdiDevice.Name = "comboBoxFtdiDevice";
-            this.comboBoxFtdiDevice.Size = new System.Drawing.Size(715, 24);
+            this.comboBoxFtdiDevice.Size = new System.Drawing.Size(808, 24);
             this.comboBoxFtdiDevice.TabIndex = 5;
             // 
             // buttonConnect
@@ -193,22 +206,24 @@
             this.buttonDisconnect.UseVisualStyleBackColor = true;
             this.buttonDisconnect.Click += new System.EventHandler(this.buttonDisconnect_Click);
             // 
-            // buttonUpdateFirmware
+            // groupBoxIo
             // 
-            this.buttonUpdateFirmware.Location = new System.Drawing.Point(56, 306);
-            this.buttonUpdateFirmware.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.buttonUpdateFirmware.Name = "buttonUpdateFirmware";
-            this.buttonUpdateFirmware.Size = new System.Drawing.Size(89, 61);
-            this.buttonUpdateFirmware.TabIndex = 9;
-            this.buttonUpdateFirmware.Text = "Update Firmware";
-            this.buttonUpdateFirmware.UseVisualStyleBackColor = true;
-            this.buttonUpdateFirmware.Click += new System.EventHandler(this.buttonUpdateFirmware_Click);
+            this.groupBoxIo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBoxIo.Enabled = false;
+            this.groupBoxIo.Location = new System.Drawing.Point(12, 521);
+            this.groupBoxIo.Name = "groupBoxIo";
+            this.groupBoxIo.Size = new System.Drawing.Size(903, 280);
+            this.groupBoxIo.TabIndex = 8;
+            this.groupBoxIo.TabStop = false;
+            this.groupBoxIo.Text = "IO";
             // 
             // QMSTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(834, 475);
+            this.ClientSize = new System.Drawing.Size(927, 813);
+            this.Controls.Add(this.groupBoxIo);
             this.Controls.Add(this.buttonDisconnect);
             this.Controls.Add(this.buttonConnect);
             this.Controls.Add(this.comboBoxFtdiDevice);
@@ -238,6 +253,7 @@
         private System.Windows.Forms.Button buttonDisconnect;
         private System.Windows.Forms.Button buttonVersion;
         private System.Windows.Forms.Button buttonUpdateFirmware;
+        private System.Windows.Forms.GroupBox groupBoxIo;
 
     }
 }

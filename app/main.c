@@ -8,7 +8,7 @@
 #include "epcs_driver.h"
 #include <sys/alt_irq.h>     // for interrupt disable
 
-#define NIOS_VERSION 0x00000001
+#define NIOS_VERSION 0x00000002
 
 static void ExecuteCmd(const char const *input, const u32 base)
 {
@@ -109,12 +109,12 @@ static void ExecuteCmd(const char const *input, const u32 base)
         
         case 'V':
         {
-            SendStr("Y", base);
+            SendStr("FPGA=0x", base);
             char versionStr[9];
-            FpgaRegisters * FPGARegs = (FpgaRegisters *)(CONTROL_STATUS_REGISTERS_BASE | BYPASS_DCACHE_MASK);
+            FpgaRegisters * FPGARegs = (FpgaRegisters *)(REGISTER_BASE | BYPASS_DCACHE_MASK);
             U32ToStr(FPGARegs->fpgaVersion, versionStr);
             SendStr(versionStr, base);
-            SendStr(" ", base);
+            SendStr(" NIOS=0x", base);
             U32ToStr(NIOS_VERSION, versionStr);
             SendStr(versionStr, base);
             SendStr("\r\n", base);
@@ -151,10 +151,10 @@ static void ExecuteCmd(const char const *input, const u32 base)
                     SendStr("Y\r\n", base);
 
                     // TODO - it would be nice to add a timeout over here
-                    while (IORD_FIFOED_AVALON_UART_STATUS(FIFOED_UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                    while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
                     {
                         // Read the Uart
-                        u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(FIFOED_UART_BASE);
+                        u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
                         runningSum += rx;
                         buffer[bufferIndex++] = rx;
                         if (bufferIndex >= length)
@@ -193,15 +193,15 @@ int main(void)
 {
     // Prepare for UART communication with external world. The default baud rate
     // is 921,600 bps
-    IOWR_FIFOED_AVALON_UART_DIVISOR(FIFOED_UART_BASE, BAUD_RATE(921600.0f));
+    IOWR_FIFOED_AVALON_UART_DIVISOR(UART_BASE, BAUD_RATE(921600.0f));
 
     // Make sure UART interrupts are disabled
-    alt_ic_irq_disable(FIFOED_UART_IRQ_INTERRUPT_CONTROLLER_ID, FIFOED_UART_IRQ);
+    alt_ic_irq_disable(UART_IRQ_INTERRUPT_CONTROLLER_ID, UART_IRQ);
 
     // Clear the input and output buffers
-    while (IORD_FIFOED_AVALON_UART_STATUS(FIFOED_UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
-        IORD_FIFOED_AVALON_UART_RXDATA(FIFOED_UART_BASE);
-    while (IORD_FIFOED_AVALON_UART_TX_FIFO_USED(FIFOED_UART_BASE) > 0);
+    while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+        IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
+    while (IORD_FIFOED_AVALON_UART_TX_FIFO_USED(UART_BASE) > 0);
     
     #define MAX_CMD_LEN 16
     char cmd[MAX_CMD_LEN];
@@ -210,23 +210,23 @@ int main(void)
     // Sit in an infinite loop waiting for serial commands
     while(1)
     {
-        while (IORD_FIFOED_AVALON_UART_STATUS(FIFOED_UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+        while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
         {
             // Read the Uart
-            char rx = IORD_FIFOED_AVALON_UART_RXDATA(FIFOED_UART_BASE);
+            char rx = IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
             
             // If this is the end of a command, then try to parse it
             if (('\r' == rx) || ('\n' == rx))
             {
                 cmd[cmdIndex] = '\0';
-                ExecuteCmd(cmd, FIFOED_UART_BASE);
+                ExecuteCmd(cmd, UART_BASE);
                 cmdIndex = 0;
             }
             
             // If this is a backspace
             else if ('\b' == rx)
             {
-                SendStr("\b \b", FIFOED_UART_BASE);
+                SendStr("\b \b", UART_BASE);
                 if (cmdIndex > 0)
                     cmdIndex--;
             }
@@ -235,7 +235,7 @@ int main(void)
             else
             {
                 // echo the character
-                SendChar(rx, FIFOED_UART_BASE);
+                SendChar(rx, UART_BASE);
                 
                 // Add it to the buffer, if possible, making sure to save the 
                 // space for the null terminator (when completing the command)
@@ -246,7 +246,7 @@ int main(void)
                 else
                 {
                     cmdIndex = 0;
-                    SendStr(NO_ANSWER, FIFOED_UART_BASE);
+                    SendStr(NO_ANSWER, UART_BASE);
                 }
             }
         }

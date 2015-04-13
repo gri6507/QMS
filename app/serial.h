@@ -13,7 +13,7 @@
 
 // Define a macro to calculate the baud rate settings for a UART given the
 // desired rate (as a float)
-#define BAUD_RATE(rate) (s32)(((f32)FIFOED_UART_FREQ / rate) + 0.5f)
+#define BAUD_RATE(rate) (s32)(((f32)UART_FREQ / rate) + 0.5f)
 
 // Definitions for the Fifoed Avalon Uart Registers
 #define IOWR_FIFOED_AVALON_UART_DIVISOR(base, data)  IOWR(base, 4, data)

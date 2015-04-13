@@ -9,10 +9,10 @@ bool RegRead(u32 addr, u32 *value)
 {
     if ((addr % 4) != 0)
         return false;
-    if (addr >= CONTROL_STATUS_REGISTERS_SPAN)
+    if (addr >= REGISTER_SPAN)
         return false;
     
-    u32 *pReg = (u32 *)((CONTROL_STATUS_REGISTERS_BASE | BYPASS_DCACHE_MASK) + addr);
+    u32 *pReg = (u32 *)((REGISTER_BASE | BYPASS_DCACHE_MASK) + addr);
     *value = *pReg;
     return true;
 }
@@ -22,10 +22,10 @@ bool RegWrite(u32 addr, u32 value)
 {
     if ((addr % 4) != 0)
         return false;
-    if (addr >= CONTROL_STATUS_REGISTERS_SPAN)
+    if (addr >= REGISTER_SPAN)
         return false;
     
-    u32 *pReg = (u32 *)((CONTROL_STATUS_REGISTERS_BASE | BYPASS_DCACHE_MASK) + addr);
+    u32 *pReg = (u32 *)((REGISTER_BASE | BYPASS_DCACHE_MASK) + addr);
     *pReg = value; 
     return true;
 }
