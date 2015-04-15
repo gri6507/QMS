@@ -43,6 +43,7 @@
             this.buttonConnect = new System.Windows.Forms.Button();
             this.buttonDisconnect = new System.Windows.Forms.Button();
             this.groupBoxIo = new System.Windows.Forms.GroupBox();
+            this.buttonClearLog = new System.Windows.Forms.Button();
             this.groupBoxCommunication.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -218,11 +219,24 @@
             this.groupBoxIo.TabStop = false;
             this.groupBoxIo.Text = "IO";
             // 
+            // buttonClearLog
+            // 
+            this.buttonClearLog.Enabled = false;
+            this.buttonClearLog.Location = new System.Drawing.Point(127, 43);
+            this.buttonClearLog.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.buttonClearLog.Name = "buttonClearLog";
+            this.buttonClearLog.Size = new System.Drawing.Size(89, 28);
+            this.buttonClearLog.TabIndex = 9;
+            this.buttonClearLog.Text = "Clear Log";
+            this.buttonClearLog.UseVisualStyleBackColor = true;
+            this.buttonClearLog.Click += new System.EventHandler(this.buttonClearLog_Click);
+            // 
             // QMSTool
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(927, 813);
+            this.Controls.Add(this.buttonClearLog);
             this.Controls.Add(this.groupBoxIo);
             this.Controls.Add(this.buttonDisconnect);
             this.Controls.Add(this.buttonConnect);
@@ -254,6 +268,7 @@
         private System.Windows.Forms.Button buttonVersion;
         private System.Windows.Forms.Button buttonUpdateFirmware;
         private System.Windows.Forms.GroupBox groupBoxIo;
+        private System.Windows.Forms.Button buttonClearLog;
 
     }
 }

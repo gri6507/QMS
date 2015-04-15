@@ -40,9 +40,9 @@ pushd "$SCRIPTPATH" >/dev/null
 # Rebuild everything
 ExecuteCmd cd bsp
 ${SCRIPTPATH}/colormake.sh clean
-rm Makefile
+ExecuteCmd rm -f Makefile settings.bsp
 ExecuteCmd cp settings_archived.bsp settings.bsp
-ExecuteCmd nios2-bsp hal . ../qsys/*.sopcinfo --cpu-name NIOS_II_Processor
+ExecuteCmd nios2-bsp-generate-files --settings settings.bsp --bsp-dir . --verbose
 ExecuteCmd ${SCRIPTPATH}/colormake.sh all
 ExecuteCmd cd ..
 ExecuteCmd nios2-app-generate-makefile --debug --app-dir app --bsp-dir bsp --src-dir app --elf-name app.elf

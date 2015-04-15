@@ -123,7 +123,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
 
         case 'F':
         {
-            if (3 != numTokens)
+            if (4 != numTokens)
                 SendStr(NO_ANSWER, base);
             else
             {
@@ -146,17 +146,24 @@ static void ExecuteCmd(const char const *input, const u32 base)
                     SendStr(NO_ANSWER, base);
                 else
                 {
+                	// Clear the input buffer
+                    while (IORD_FIFOED_AVALON_UART_STATUS(base) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                        IORD_FIFOED_AVALON_UART_RXDATA(base);
+
                     // Acknowledge that the command is good. This will tell the
                     // sender to actually send the specified number of bytes
                     SendStr("Y\r\n", base);
 
                     // TODO - it would be nice to add a timeout over here
-                    while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                    while (true)
                     {
-                        // Read the Uart
-                        u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
-                        runningSum += rx;
-                        buffer[bufferIndex++] = rx;
+                    	while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                    	{
+							// Read the Uart
+							u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
+							runningSum += rx;
+							buffer[bufferIndex++] = rx;
+                    	}
                         if (bufferIndex >= length)
                             break;
                     }

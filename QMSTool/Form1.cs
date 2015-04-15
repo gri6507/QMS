@@ -10,6 +10,9 @@ namespace QMSTool
     public partial class QMSTool : Form
     {
         private IFTDI _uart;
+        private const int TopOffset = 20;
+        private const int LHeight = 25;
+        private readonly Button _buttonUpdateInputs;
 
         private readonly Dictionary<UInt32, String> _registers = new Dictionary<UInt32, String>
         {
@@ -43,33 +46,20 @@ namespace QMSTool
 
             _ioConfig = new CheckBox[90];
             _ioState = new CheckBox[_ioConfig.Length];
-            const int topOffset = 20;
-            const int lHeight = 25;
 
-            CreateRowOfIo( 1, 32,               topOffset + lHeight * 0, topOffset + lHeight * 1, topOffset + lHeight * 2);
-            CreateRowOfIo(33, 64,               topOffset + lHeight * 3, topOffset + lHeight * 4, topOffset + lHeight * 5);
-            CreateRowOfIo(65, _ioConfig.Length, topOffset + lHeight * 6, topOffset + lHeight * 7, topOffset + lHeight * 8);
+            CreateRowOfIo( 1, 32,               TopOffset + LHeight * 0, TopOffset + LHeight * 1, TopOffset + LHeight * 2);
+            CreateRowOfIo(33, 64,               TopOffset + LHeight * 3, TopOffset + LHeight * 4, TopOffset + LHeight * 5);
+            CreateRowOfIo(65, _ioConfig.Length, TopOffset + LHeight * 6, TopOffset + LHeight * 7, TopOffset + LHeight * 8);
 
-            // Default every IO to input
-            UInt32[] regAddrs = { 0x028, 0x02c, 0x030 };
-            foreach (var regAddr in regAddrs)
-            {
-                if (!WriteRegister(regAddr, 0))
-                {
-                    WriteLine("Error setting IO config");
-                }
-            }
-
-            Button buttonUpdateInputs = new Button
+            _buttonUpdateInputs = new Button
             {
                 Text = @"Update Inputs",
                 Left = 750,
-                Top = topOffset + lHeight * 8 - 15,
+                Top = TopOffset + LHeight * 8 - 15,
                 AutoSize = true,
             };
-            buttonUpdateInputs.Click += UpdateAllInputs;
-            groupBoxIo.Controls.Add(buttonUpdateInputs);
-            buttonUpdateInputs.PerformClick();
+            _buttonUpdateInputs.Click += UpdateAllInputs;
+            groupBoxIo.Controls.Add(_buttonUpdateInputs);
         }
 
         private void CreateRowOfIo(int startNum, int stopNum, int top1, int top2, int top3)
@@ -114,7 +104,7 @@ namespace QMSTool
                     Width = cbWidth,
                     Height = cbHeight,
                     Name = "Config" + i,
-                    Checked = false,
+                    Checked = true,       // default to outputs
                 };
                 _ioConfig[i - 1].CheckedChanged += HandleIoConfigChange;
                 groupBoxIo.Controls.Add(_ioConfig[i - 1]);
@@ -126,7 +116,7 @@ namespace QMSTool
                     Width = cbWidth,
                     Height = cbHeight,
                     Name = "State" + i,
-                    Enabled = false,
+                    Checked = false,      // output a LOW
                 };
                 _ioState[i - 1].CheckedChanged += HandleIoStateChange;
                 groupBoxIo.Controls.Add(_ioState[i - 1]);
@@ -148,14 +138,14 @@ namespace QMSTool
                 }
                 else
                 {
-                    WriteLine(_registers[regAddr] + " = " + regValue);
                     UInt32 regVal = UInt32.Parse(regValue, NumberStyles.HexNumber);
                     for (int i = 0; i < 32; i++)
                     {
+                        // If this is an input, then check its state
                         if (!_ioConfig[ioNumZeroBased].Checked)
                         {
-                            bool bitVal = (regVal & (1 << i)) == 1;
-                            _ioState[ioNumZeroBased].Enabled = bitVal;
+                            bool isInputHigh = (regVal & (1 << i)) != 0;
+                            _ioState[ioNumZeroBased].Checked = isInputHigh;
                         }
                         ioNumZeroBased++;
                         if (ioNumZeroBased >= _ioState.Length)
@@ -171,26 +161,34 @@ namespace QMSTool
             if (cb != null && cb.Name.StartsWith("State"))
             {
                 int ioNum = int.Parse(new String(cb.Name.ToCharArray().Where(Char.IsDigit).ToArray()));
-                bool newVal = cb.Checked; 
-                UInt32 regAddr;
-                int bit;
-                if ((ioNum >= 1) && (ioNum <= 32))
-                {
-                    regAddr = 0x028;
-                    bit = ioNum - 1;
-                }
-                else if ((ioNum >= 33) && (ioNum <= 64))
-                {
-                    regAddr = 0x02c;
-                    bit = ioNum - 33;
-                }
-                else
-                {
-                    regAddr = 0x030;
-                    bit = ioNum - 65;
-                }
+                bool newVal = cb.Checked;
+                SetIoState(ioNum, newVal);
+            }
+        }
 
-                ReadModifyWriteReg(regAddr, newVal, bit, ioNum);
+        private void SetIoState(int ioNum, bool newVal)
+        {
+            UInt32 regAddr;
+            int bit;
+            if ((ioNum >= 1) && (ioNum <= 32))
+            {
+                regAddr = 0x028;
+                bit = ioNum - 1;
+            }
+            else if ((ioNum >= 33) && (ioNum <= 64))
+            {
+                regAddr = 0x02c;
+                bit = ioNum - 33;
+            }
+            else
+            {
+                regAddr = 0x030;
+                bit = ioNum - 65;
+            }
+
+            if (false == ReadModifyWriteReg(regAddr, newVal, bit))
+            {
+                WriteLine("Error in ReadModifyWrite while trying to change state of IO #" + ioNum + " to " + newVal);
             }
         }
 
@@ -220,11 +218,32 @@ namespace QMSTool
                     bit = ioNum - 65;
                 }
 
-                ReadModifyWriteReg(regAddr, isOutput, bit, ioNum);
+                if (false == ReadModifyWriteReg(regAddr, isOutput, bit))
+                {
+                    WriteLine("Error in ReadModifyWrite while trying to change config of IO #" + ioNum + " to " + isOutput);
+                }
+                else
+                {
+                    // If the new state is an input, then read the input value
+                    if (false == isOutput)
+                    {
+                        System.Threading.Thread.Sleep(50);
+                        _ioState[ioNum - 1].Enabled = true;
+                        _buttonUpdateInputs.PerformClick();
+                    }
+
+                    // If the new state is an output, then drive that output low
+                    else
+                    {
+                        // SetIoState(ioNum, false);
+                        _ioState[ioNum - 1].Checked = false;
+                        _ioState[ioNum - 1].Enabled = false;
+                    }
+                }
             }
         }
 
-        private bool ReadModifyWriteReg(UInt32 regAddr, bool isChecked, int bit, int ioNum)
+        private bool ReadModifyWriteReg(UInt32 regAddr, bool isChecked, int bit)
         {
             bool status = false;
             String regValue;
@@ -235,17 +254,14 @@ namespace QMSTool
             }
             else
             {
-                WriteLine(_registers[regAddr] + " = " + regValue);
                 UInt32 regVal = UInt32.Parse(regValue, NumberStyles.HexNumber);
                 if (isChecked)
                 {
-                    regVal &= (UInt32)(1 << bit);
-                    _ioState[ioNum - 1].Enabled = true;
+                    regVal |= (UInt32)(1 << bit);
                 }
                 else
                 {
-                    regVal |= (UInt32)(1 << bit);
-                    _ioState[ioNum - 1].Enabled = false;
+                    regVal &= ~((UInt32)(1 << bit));
                 }
                 if (!WriteRegister(regAddr, regVal))
                 {
@@ -373,8 +389,7 @@ namespace QMSTool
                         textBoxRegValue.Text = String.Empty;
                     }
                     else
-                    { 
-                        WriteLine(_registers[regAddr] + " = " + regValue);
+                    {
                         textBoxRegValue.Text = regValue;
                     }
                 }
@@ -404,10 +419,6 @@ namespace QMSTool
                     if (!WriteRegister(regAddr, regValue))
                     {
                         WriteLine("Error writing register " + regAddr.ToString("x3"));
-                    }
-                    else
-                    {
-                        WriteLine(_registers[regAddr] + " = " + regValue.ToString("x8"));
                     }
                 }
                 catch (FormatException)
@@ -475,6 +486,8 @@ namespace QMSTool
                     }
 
                     // We can now send the chunk
+                    _uart.DiscardInBuffer();
+                    _uart.DiscardOutBuffer();
                     for (int i = 0; i < numBytesInChunk; i++)
                     {
                         _uart.Write(data[dataIndex++]);
@@ -508,6 +521,7 @@ namespace QMSTool
                 String answer = SendCmdGetResponse("W " + regAddr.ToString("x") + " " + regValue.ToString("x") + "\n");
                 if (answer.StartsWith("Y"))
                 {
+                    WriteLine("Wrote " + _registers[regAddr] + " = 0x" + regValue.ToString("x8"));
                     status = true;
                 }
             }
@@ -529,6 +543,7 @@ namespace QMSTool
                 if (tokens[0].Equals("Y"))
                 {
                     regValue = tokens[1];
+                    WriteLine("Read  " + _registers[regAddr] + " = 0x" + regValue);
                 }
             }
             catch
@@ -555,6 +570,27 @@ namespace QMSTool
             groupBoxCommunication.Enabled = true;
             richTextBoxInfo.Enabled = true;
             groupBoxIo.Enabled = true;
+            buttonClearLog.Enabled = true;
+
+            // Default every IO to output
+            UInt32[] regConfigAddrs = { 0x034, 0x038, 0x03c };
+            foreach (var regAddr in regConfigAddrs)
+            {
+                if (!WriteRegister(regAddr, 0xFFFFFFFF))
+                {
+                    WriteLine("Error setting IO config");
+                }
+            }
+
+            // Default every IO to output a LOW
+            UInt32[] regStateAddrs = { 0x028, 0x02c, 0x030 };
+            foreach (var regAddr in regStateAddrs)
+            {
+                if (!WriteRegister(regAddr, 0))
+                {
+                    WriteLine("Error setting IO config");
+                }
+            }
         }
 
         private void buttonDisconnect_Click(object sender, EventArgs e)
@@ -566,6 +602,7 @@ namespace QMSTool
             groupBoxCommunication.Enabled = false;
             richTextBoxInfo.Enabled = false;
             groupBoxIo.Enabled = false;
+            buttonClearLog.Enabled = false;
         }
 
 
@@ -573,6 +610,11 @@ namespace QMSTool
         {
             richTextBoxInfo.AppendText(s + Environment.NewLine);
             richTextBoxInfo.ScrollToCaret();
+        }
+
+        private void buttonClearLog_Click(object sender, EventArgs e)
+        {
+            richTextBoxInfo.Clear();
         }
     }
 }

@@ -2,11 +2,11 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>Apr 6, 2015 5:29:14 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1428359354296</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>Apr 15, 2015 6:55:22 AM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1429098922989</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\cygwin64\home\pgrinber\KirkSmallNios\bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
-        <SopcDesignFile>QMS_FPGA_QSYS.sopcinfo</SopcDesignFile>
+        <SopcDesignFile>..\qsys\QMS_FPGA_QSYS.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>NIOS_II_Processor</Cpu>
         <SchemaVersion>1.9</SchemaVersion>
@@ -146,7 +146,7 @@
                 <SettingName>hal.linker.exception_stack_memory_region_name</SettingName>
                 <Identifier>NONE</Identifier>
                 <Type>UnquotedString</Type>
-                <Value>MEM_DDR3</Value>
+                <Value>NIOS_II_RAM</Value>
                 <DefaultValue>none</DefaultValue>
                 <DestinationFile>none</DestinationFile>
                 <Description>Name of the existing memory region that will be divided up to create the 'exception_stack' memory region. The selected region name will be adjusted automatically when the BSP is generated to create the 'exception_stack' memory region.</Description>
@@ -182,7 +182,7 @@
                 <SettingName>hal.linker.interrupt_stack_memory_region_name</SettingName>
                 <Identifier>NONE</Identifier>
                 <Type>UnquotedString</Type>
-                <Value>MEM_DDR3</Value>
+                <Value>NIOS_II_RAM</Value>
                 <DefaultValue>none</DefaultValue>
                 <DestinationFile>none</DestinationFile>
                 <Description>Name of the existing memory region that will be divided up to create the 'interrupt_stack' memory region. The selected region name will be adjusted automatically when the BSP is generated to create the 'interrupt_stack' memory region.</Description>
@@ -924,26 +924,26 @@
         </MemoryMap>
         <LinkerSection>
                 <sectionName>.text</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
         <LinkerSection>
                 <sectionName>.rodata</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
         <LinkerSection>
                 <sectionName>.rwdata</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
         <LinkerSection>
                 <sectionName>.bss</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
         <LinkerSection>
                 <sectionName>.heap</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
         <LinkerSection>
                 <sectionName>.stack</sectionName>
-                <regionName>MEM_DDR3</regionName>
+                <regionName>NIOS_II_RAM</regionName>
         </LinkerSection>
 </sch:Settings>
