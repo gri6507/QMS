@@ -15,7 +15,7 @@ namespace QMSTool
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new QMSTool());
+            Application.Run(new QmsTool());
         }
     }
 }

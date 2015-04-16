@@ -7,37 +7,62 @@ using System.Windows.Forms;
 
 namespace QMSTool
 {
-    public partial class QMSTool : Form
+    public partial class QmsTool : Form
     {
         private IFTDI _uart;
         private const int TopOffset = 20;
         private const int LHeight = 25;
         private readonly Button _buttonUpdateInputs;
 
-        private readonly Dictionary<UInt32, String> _registers = new Dictionary<UInt32, String>
+        private enum FpgaRegisters
         {
-            {0x000, "FPGAVersion"},
-            {0x004, "ModeCtrl"},
-            {0x008, "DAC1"},
-            {0x00c, "DAC2"},
-            {0x010, "DAC3"},
-            {0x014, "DAC4"},
-            {0x018, "ADC1"},
-            {0x01c, "ADC2"},
-            {0x020, "ADC3"},
-            {0x024, "ADC4"},
-            {0x028, "GPIO32_1"},
-            {0x02C, "GPIO64_33"},
-            {0x030, "GPIO_H10_1_and_GPIO80_65"},
-            {0x034, "ConfigGPIO32_1"},
-            {0x038, "ConfigGPIO64_33"},
-            {0x03C, "ConfigGPIO_H10_1_and_GPIO80_65"},
+            FpgaVersion,
+            ModeCtrl,
+            Dac1,
+            Dac2,
+            Dac3,
+            Dac4,
+            Adc1,
+            Adc2,
+            Adc3,
+            Adc4,
+            Gpio32To1,
+            Gpio64To33,
+            GpioH10To1AndGpio80To65,
+            Config32To1,
+            Config64To33,
+            ConfigH10To1AndGpio80To65,
+        };
+
+        private UInt32 RegAddrFromName(FpgaRegisters name)
+        {
+           return _registers.FirstOrDefault(x => x.Value == name).Key;
+        }
+
+        private readonly Dictionary<UInt32, FpgaRegisters> _registers = new Dictionary<UInt32, FpgaRegisters>
+        {
+            {0x000, FpgaRegisters.FpgaVersion},
+            {0x004, FpgaRegisters.ModeCtrl},
+            {0x008, FpgaRegisters.Dac1},
+            {0x00c, FpgaRegisters.Dac2},
+            {0x010, FpgaRegisters.Dac3},
+            {0x014, FpgaRegisters.Dac4},
+            {0x018, FpgaRegisters.Adc1},
+            {0x01c, FpgaRegisters.Adc2},
+            {0x020, FpgaRegisters.Adc3},
+            {0x024, FpgaRegisters.Adc4},
+            {0x028, FpgaRegisters.Gpio32To1},
+            {0x02C, FpgaRegisters.Gpio64To33},
+            {0x030, FpgaRegisters.GpioH10To1AndGpio80To65},
+            {0x034, FpgaRegisters.Config32To1},
+            {0x038, FpgaRegisters.Config64To33},
+            {0x03C, FpgaRegisters.ConfigH10To1AndGpio80To65},
         };
 
         private readonly CheckBox[] _ioConfig;
         private readonly CheckBox[] _ioState;
 
-        public QMSTool()
+        public QmsTool()
         {
             InitializeComponent();
             Text = @"QMSTool - " + RetrieveLinkerTimestamp();
@@ -125,7 +150,12 @@ namespace QMSTool
 
         private void UpdateAllInputs(object sender, EventArgs e)
         {
-            UInt32[] regAddrs = {0x028, 0x02C, 0x030};
+            UInt32[] regAddrs =
+            {
+                RegAddrFromName(FpgaRegisters.Gpio32To1),
+                RegAddrFromName(FpgaRegisters.Gpio64To33),
+                RegAddrFromName(FpgaRegisters.GpioH10To1AndGpio80To65),
+            };
             int ioNumZeroBased = 0;
 
             foreach (UInt32 regAddr in regAddrs)
@@ -172,17 +202,17 @@ namespace QMSTool
             int bit;
             if ((ioNum >= 1) && (ioNum <= 32))
             {
-                regAddr = 0x028;
+                regAddr = RegAddrFromName(FpgaRegisters.Gpio32To1);
                 bit = ioNum - 1;
             }
             else if ((ioNum >= 33) && (ioNum <= 64))
             {
-                regAddr = 0x02c;
+                regAddr = RegAddrFromName(FpgaRegisters.Gpio64To33);
                 bit = ioNum - 33;
             }
             else
             {
-                regAddr = 0x030;
+                regAddr = RegAddrFromName(FpgaRegisters.GpioH10To1AndGpio80To65);
                 bit = ioNum - 65;
             }
 
@@ -204,17 +234,17 @@ namespace QMSTool
                 int bit;
                 if ((ioNum >= 1) && (ioNum <= 32))
                 {
-                    regAddr = 0x034;
+                    regAddr = RegAddrFromName(FpgaRegisters.Config32To1);
                     bit = ioNum - 1;
                 }
                 else if ((ioNum >= 33) && (ioNum <= 64))
                 {
-                    regAddr = 0x038;
+                    regAddr = RegAddrFromName(FpgaRegisters.Config64To33);
                     bit = ioNum - 33;
                 }
                 else
                 {
-                    regAddr = 0x03C;
+                    regAddr = RegAddrFromName(FpgaRegisters.ConfigH10To1AndGpio80To65);
                     bit = ioNum - 65;
                 }
 
@@ -228,7 +258,7 @@ namespace QMSTool
                     if (false == isOutput)
                     {
                         System.Threading.Thread.Sleep(50);
-                        _ioState[ioNum - 1].Enabled = true;
+                        _ioState[ioNum - 1].Enabled = false;
                         _buttonUpdateInputs.PerformClick();
                     }
 
@@ -237,7 +267,7 @@ namespace QMSTool
                     {
                         // SetIoState(ioNum, false);
                         _ioState[ioNum - 1].Checked = false;
-                        _ioState[ioNum - 1].Enabled = false;
+                        _ioState[ioNum - 1].Enabled = true;
                     }
                 }
             }
@@ -250,7 +280,7 @@ namespace QMSTool
             ReadRegister(regAddr, out regValue);
             if (String.IsNullOrEmpty(regValue))
             {
-                WriteLine("Error reading IO config");
+                WriteLine("Error reading register");
             }
             else
             {
@@ -265,7 +295,7 @@ namespace QMSTool
                 }
                 if (!WriteRegister(regAddr, regVal))
                 {
-                    WriteLine("Error setting IO config");
+                    WriteLine("Error setting register");
                 }
                 else
                 {
@@ -572,8 +602,13 @@ namespace QMSTool
             groupBoxIo.Enabled = true;
             buttonClearLog.Enabled = true;
 
-            // Default every IO to output
-            UInt32[] regConfigAddrs = { 0x034, 0x038, 0x03c };
+            // Default every IO to output (output is enabled when bit is 1)
+            UInt32[] regConfigAddrs =
+            {
+                RegAddrFromName(FpgaRegisters.Config32To1),
+                RegAddrFromName(FpgaRegisters.Config64To33),
+                RegAddrFromName(FpgaRegisters.ConfigH10To1AndGpio80To65)
+            };
             foreach (var regAddr in regConfigAddrs)
             {
                 if (!WriteRegister(regAddr, 0xFFFFFFFF))
@@ -582,13 +617,18 @@ namespace QMSTool
                 }
             }
 
-            // Default every IO to output a LOW
-            UInt32[] regStateAddrs = { 0x028, 0x02c, 0x030 };
+            // Default every IO to output a LOW (output is low when bit is 0)
+            UInt32[] regStateAddrs =
+            {
+                RegAddrFromName(FpgaRegisters.Gpio32To1),
+                RegAddrFromName(FpgaRegisters.Gpio64To33),
+                RegAddrFromName(FpgaRegisters.GpioH10To1AndGpio80To65)
+            };
             foreach (var regAddr in regStateAddrs)
             {
                 if (!WriteRegister(regAddr, 0))
                 {
-                    WriteLine("Error setting IO config");
+                    WriteLine("Error setting IO state");
                 }
             }
         }

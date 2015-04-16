@@ -1,6 +1,6 @@
 ﻿namespace QMSTool
 {
-    partial class QMSTool
+    partial class QmsTool
     {
         /// <summary>
         /// Required designer variable.
