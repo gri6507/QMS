@@ -100,7 +100,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
                 u32 regAddr;
                 u32 regValue;
                 if (StrToU32(token[1], &regAddr) && StrToU32(token[2], &regValue) && RegWrite(regAddr, regValue))
-                    SendStr("Y\r\n", base);
+                    SendStr(YES_ANSWER, base);
                 else
                     SendStr(NO_ANSWER, base);
             }
@@ -136,7 +136,7 @@ static void ExecuteCmd(const char const *input, const u32 base)
 
                 // Define the maximum transfer size as the subsector size for
                 // the EPCS part. This will get the most efficiency
-                #define MAX_TRANSFER_SIZE (SERIAL_FLASH_WORDS_PER_SUBSECTOR)
+                #define MAX_TRANSFER_SIZE 1024 // (SERIAL_FLASH_WORDS_PER_SUBSECTOR)
                 u8  buffer[MAX_TRANSFER_SIZE];
                 u32 bufferIndex = 0;
                 u32 runningSum = 0;
@@ -147,20 +147,19 @@ static void ExecuteCmd(const char const *input, const u32 base)
                 else
                 {
                 	// Clear the input buffer
-                    while (IORD_FIFOED_AVALON_UART_STATUS(base) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
-                        IORD_FIFOED_AVALON_UART_RXDATA(base);
+                	FlushRx(base);
 
                     // Acknowledge that the command is good. This will tell the
                     // sender to actually send the specified number of bytes
-                    SendStr("Y\r\n", base);
+                    SendStr(YES_ANSWER, base);
 
-                    // TODO - it would be nice to add a timeout over here
+                    // We must receive the correct number of bytes
                     while (true)
                     {
-                    	while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+                    	while (IORD_FIFOED_AVALON_UART_STATUS(base) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
                     	{
 							// Read the Uart
-							u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
+							u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(base);
 							runningSum += rx;
 							buffer[bufferIndex++] = rx;
                     	}
@@ -175,12 +174,14 @@ static void ExecuteCmd(const char const *input, const u32 base)
                     {
                         alt_flash_fd* fd = EPCS_OpenFlash(SERIAL_FLASH_NAME);
                         if (0 == EPCS_WriteFlash(fd, startAddr, (u32)buffer, length))
-                            SendStr("Y\r\n", base);
+                            SendStr(YES_ANSWER, base);
                         else
                             SendStr(NO_ANSWER, base);
                     }
                 }
             }
+
+            break;
         }
             
         default:
@@ -206,9 +207,8 @@ int main(void)
     alt_ic_irq_disable(UART_IRQ_INTERRUPT_CONTROLLER_ID, UART_IRQ);
 
     // Clear the input and output buffers
-    while (IORD_FIFOED_AVALON_UART_STATUS(UART_BASE) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
-        IORD_FIFOED_AVALON_UART_RXDATA(UART_BASE);
-    while (IORD_FIFOED_AVALON_UART_TX_FIFO_USED(UART_BASE) > 0);
+    FlushRx(UART_BASE);
+    FlushTx(UART_BASE);
     
     #define MAX_CMD_LEN 16
     char cmd[MAX_CMD_LEN];
@@ -227,6 +227,8 @@ int main(void)
             {
                 cmd[cmdIndex] = '\0';
                 ExecuteCmd(cmd, UART_BASE);
+                FlushRx(UART_BASE);
+                FlushTx(UART_BASE);
                 cmdIndex = 0;
             }
             

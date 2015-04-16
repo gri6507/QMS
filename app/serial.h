@@ -24,7 +24,8 @@
 #define FIFOED_AVALON_UART_STATUS_TRDY_MSK           0x40
 #define FIFOED_AVALON_UART_CONTROL_RRDY_MSK          0x80
 
-#define NO_ANSWER "N\r\n"
+#define NO_ANSWER  "N\r\n"
+#define YES_ANSWER "Y\r\n"
 
 // Function to Send a character over the UART
 void SendChar(const u16 c, const u32 base);
@@ -38,6 +39,20 @@ bool StrToU32(const char const *s, u32 *v);
 // Function to convert a u32 into a string representation of the hex value
 void U32ToStr(u32 v, char *ans);
 
+// Function to flush out any pending data on the FIFO'd UART's RX line
+static ALT_INLINE void ALT_ALWAYS_INLINE FlushRx(u32 base)
+{
+	while (IORD_FIFOED_AVALON_UART_STATUS(base) & FIFOED_AVALON_UART_CONTROL_RRDY_MSK)
+	{
+	    IORD_FIFOED_AVALON_UART_RXDATA(base);
+	}
+}
+
+// Function to flush out any pending data on the FIFO'd UART's TX line
+static ALT_INLINE void ALT_ALWAYS_INLINE FlushTx(u32 base)
+{
+	while (IORD_FIFOED_AVALON_UART_TX_FIFO_USED(UART_BASE) > 0);
+}
 
 
 

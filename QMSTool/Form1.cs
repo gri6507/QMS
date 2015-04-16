@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace QMSTool
@@ -393,7 +394,7 @@ namespace QMSTool
 
         private void buttonVersion_Click(object sender, EventArgs e)
         {
-            String version = SendCmdGetResponse("V\n");
+            String version = SendCmdGetResponse("V");
             if (!String.IsNullOrEmpty(version))
             {
                 WriteLine("Version is " + version);
@@ -471,6 +472,81 @@ namespace QMSTool
             }
         }
 
+
+        private byte[] _firmwareData;
+
+        private void DoFirmwareUpdate()
+        {
+            bool success = false;
+            try
+            {
+                const int chunkSize = 1024;
+                int dataIndex = 0;
+                bool haveFailure = false;
+                while (dataIndex < _firmwareData.Length)
+                {
+                    int numBytesInChunk = 0;
+                    UInt32 chunkChecksum = 0;
+                    while (((dataIndex + numBytesInChunk) < _firmwareData.Length) && (numBytesInChunk < chunkSize))
+                    {
+                        chunkChecksum += _firmwareData[dataIndex + numBytesInChunk];
+                        numBytesInChunk++;
+                    }
+
+                    // Request to send the chunk 
+                    String cmd = String.Format("F {0:x} {1:x} {2:x}", dataIndex, numBytesInChunk, chunkChecksum);
+                    String answer;
+                    int numRetries = 3;
+                    while (numRetries > 0)
+                    {
+                        WriteLine(cmd);
+                        answer = SendCmdGetResponse(cmd);
+                        if (!answer.StartsWith("Y"))
+                        {
+                            numRetries--;
+                            WriteLine("Retrying");
+                            Thread.Sleep(500);
+                        }
+                        else
+                            break;
+                    }
+
+                    if (0 == numRetries)
+                    {
+                        haveFailure = true;
+                        break;
+                    }
+
+                    // We can now send the chunk
+                    _uart.DiscardInBuffer();
+                    _uart.DiscardOutBuffer();
+                    for (int i = 0; i < numBytesInChunk; i++)
+                    {
+                        _uart.Write(_firmwareData[dataIndex++]);
+                    }
+
+                    // Verify the response
+                    answer = _uart.ReadLineTimeout(10000);
+                    if (!answer.StartsWith("Y"))
+                    {
+                        haveFailure = true;
+                        break;
+                    }
+
+                    Thread.Sleep(500);
+                }
+
+                if (false == haveFailure)
+                    success = true;
+            }
+            catch
+            {
+                success = false;
+            }
+
+            WriteLine(success ? "Firmware update complete. Restart device!" : "Firmware update failed!");
+        }
+
         private void buttonUpdateFirmware_Click(object sender, EventArgs e)
         {
             OpenFileDialog ofd = new OpenFileDialog
@@ -485,62 +561,10 @@ namespace QMSTool
                 return;
             }
 
-            bool success = false;
-            try
-            {
-                Cursor = Cursors.WaitCursor;
-
-                String filename = ofd.FileName;
-                byte[] data = File.ReadAllBytes(filename);
-
-                const int chunkSize = 4*1024;
-                int dataIndex = 0;
-                bool haveFailure = false;
-                while (dataIndex < data.Length)
-                {
-                    int numBytesInChunk = 0;
-                    UInt32 chunkChecksum = 0;
-                    while (((dataIndex + numBytesInChunk) < data.Length) && (numBytesInChunk < chunkSize))
-                    {
-                        chunkChecksum += data[dataIndex + numBytesInChunk];
-                        numBytesInChunk++;
-                    }
-
-                    // Request to send the chunk 
-                    String cmd = String.Format("F {0:x} {1:x} {2:x}\n", dataIndex, numBytesInChunk, chunkChecksum);
-                    String answer = SendCmdGetResponse(cmd);
-                    if (!answer.StartsWith("Y"))
-                    {
-                        haveFailure = true;
-                        break;
-                    }
-
-                    // We can now send the chunk
-                    _uart.DiscardInBuffer();
-                    _uart.DiscardOutBuffer();
-                    for (int i = 0; i < numBytesInChunk; i++)
-                    {
-                        _uart.Write(data[dataIndex++]);
-                    }
-
-                    // Verify the response
-                    answer = _uart.ReadLineTimeout(1000);
-                    if (!answer.StartsWith("Y"))
-                    {
-                        haveFailure = true;
-                        break;
-                    }
-                }
-
-                if (false == haveFailure)
-                    success = true;
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
-            }
-
-            WriteLine(success ? "Firmware update complete. Restart device!" : "Firmware update failed!");
+            _firmwareData = File.ReadAllBytes(ofd.FileName);
+            ThreadStart ts = DoFirmwareUpdate;
+            Thread t = new Thread(ts) {Name = "DoFirmwareUpdate"};
+            t.Start();
         }
 
         private bool WriteRegister(uint regAddr, uint regValue)
@@ -548,7 +572,7 @@ namespace QMSTool
             bool status = false;
             try
             {
-                String answer = SendCmdGetResponse("W " + regAddr.ToString("x") + " " + regValue.ToString("x") + "\n");
+                String answer = SendCmdGetResponse("W " + regAddr.ToString("x") + " " + regValue.ToString("x"));
                 if (answer.StartsWith("Y"))
                 {
                     WriteLine("Wrote " + _registers[regAddr] + " = 0x" + regValue.ToString("x8"));
@@ -568,7 +592,7 @@ namespace QMSTool
 
             try
             {
-                String answer = SendCmdGetResponse("R " + regAddr.ToString("x") + "\n");
+                String answer = SendCmdGetResponse("R " + regAddr.ToString("x"));
                 String[] tokens = answer.Split(' ');
                 if (tokens[0].Equals("Y"))
                 {
@@ -646,8 +670,25 @@ namespace QMSTool
         }
 
 
+        private delegate void WriteLineDelegate(String s);
         public void WriteLine(String s)
         {
+            // Since the callback is called from another thread, make sure to invoke
+            // the main GUI thread first.
+            if (InvokeRequired)
+            {
+                try
+                {
+                    Invoke((WriteLineDelegate)WriteLine, s);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // When closing the window while streaming, we may get this exception
+                    // because the act of closing the form disposes of the form object, 
+                    // which makes the invoke fail.
+                }
+                return;
+            }
             richTextBoxInfo.AppendText(s + Environment.NewLine);
             richTextBoxInfo.ScrollToCaret();
         }
