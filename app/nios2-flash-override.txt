@@ -1,0 +1,36 @@
+[EPCS-EF3013] # EPCS4N Winbond 25x40
+sector_size = 65536
+sector_count = 8
+[EPCS-EF3012] # EPCS2N Winbond 25x20
+sector_size = 65536
+sector_count = 4
+[EPCS-EF3011] # EPCS1N Winbond 25x10
+sector_size = 65536
+sector_count = 2
+[EPCS-EF2013] # EPCS4N Winbond 25x40bl
+sector_size = 65536
+sector_count = 8
+[EPCS-EF2012] # EPCS2N Winbond 25x20bl
+sector_size = 65536
+sector_count = 4
+[EPCS-EF2011] # EPCS1N Winbond 25x10bl
+sector_size = 65536
+sector_count = 2
+[EPCS-EF3013] # EPCS4N Winbond 25x40
+sector_size = 65536
+sector_count = 8
+[EPCS-EF2013] # EPCS4N Winbond 25x40bl
+sector_size = 65536
+sector_count = 8
+[EPCS-202018] # EPCS 64MB
+sector_size = 262144
+sector_count = 64
+[EPCS-20BA18] # EPCQ 128Mb
+sector_size = 65536
+sector_count = 256 
+[EPCS-EF4017] # Winbond 64Mb
+sector_size = 65536
+sector_count = 256
+[EPCS-20BA16] # EPCQ 32Mb
+sector_size = 65536
+sector_count = 64

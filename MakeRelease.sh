@@ -43,6 +43,10 @@ ${SCRIPTPATH}/colormake.sh clean
 ExecuteCmd rm -f Makefile settings.bsp
 ExecuteCmd cp settings_archived.bsp settings.bsp
 ExecuteCmd nios2-bsp-generate-files --settings settings.bsp --bsp-dir . --verbose
+
+# In order to make the Altera HAL aware of the EPCQ32 part, we need to update
+# the HAL
+ExecuteCmd cp ../altera_avalon_epcs_flash_controller.c drivers/src/
 ExecuteCmd ${SCRIPTPATH}/colormake.sh all
 ExecuteCmd cd ..
 ExecuteCmd nios2-app-generate-makefile --debug --app-dir app --bsp-dir bsp --src-dir app --elf-name app.elf

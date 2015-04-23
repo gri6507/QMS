@@ -480,7 +480,15 @@ namespace QMSTool
             bool success = false;
             try
             {
-                const int chunkSize = 1024;
+                const int chunkSize = 4*1024;
+                const int flashSectorSize = 64*1024;
+
+                int origSize = _firmwareData.Length;
+                int extraSize = flashSectorSize - _firmwareData.Length % flashSectorSize;
+                int paddedSize = origSize + extraSize;
+
+                Array.Resize(ref _firmwareData, paddedSize);
+
                 int dataIndex = 0;
                 bool haveFailure = false;
                 while (dataIndex < _firmwareData.Length)
@@ -520,13 +528,13 @@ namespace QMSTool
                     // We can now send the chunk
                     _uart.DiscardInBuffer();
                     _uart.DiscardOutBuffer();
-                    for (int i = 0; i < numBytesInChunk; i++)
-                    {
-                        _uart.Write(_firmwareData[dataIndex++]);
-                    }
+                    byte[] chunk = new byte[chunkSize];
+                    Buffer.BlockCopy(_firmwareData, dataIndex, chunk, 0, numBytesInChunk);
+                    _uart.Write(chunk);
+                    dataIndex += numBytesInChunk;
 
                     // Verify the response
-                    answer = _uart.ReadLineTimeout(10000);
+                    answer = _uart.ReadLineTimeout(30000);
                     if (!answer.StartsWith("Y"))
                     {
                         haveFailure = true;

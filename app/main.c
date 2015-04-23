@@ -5,8 +5,9 @@
 #include "stdhdr.h"
 #include "fpga.h"
 #include "serial.h"
-#include "epcs_driver.h"
+#include "sys/alt_flash.h"   // for flash access
 #include <sys/alt_irq.h>     // for interrupt disable
+#include <string.h>          // for memset
 
 #define NIOS_VERSION 0x00000002
 
@@ -134,18 +135,20 @@ static void ExecuteCmd(const char const *input, const u32 base)
                 StrToU32(token[2], &length);
                 StrToU32(token[3], &checksum);
 
-                // Define the maximum transfer size as the subsector size for
-                // the EPCS part. This will get the most efficiency
-                #define MAX_TRANSFER_SIZE 1024 // (SERIAL_FLASH_WORDS_PER_SUBSECTOR)
-                u8  buffer[MAX_TRANSFER_SIZE];
-                u32 bufferIndex = 0;
-                u32 runningSum = 0;
+                // Transfer two chunks to get a full sector worth
+				#define FLASH_SECTOR_SIZE (64*1024)
+				#define TRANSFER_SIZE     (4*1024)
+                u8  buffer[FLASH_SECTOR_SIZE];
 
-                // Validate the requested transfer size against our buffer size
-                if (length > MAX_TRANSFER_SIZE)
+                // Validate the requested transfer size
+                if (length != TRANSFER_SIZE)
                     SendStr(NO_ANSWER, base);
                 else
                 {
+                    u32 bufferIndex = startAddr % FLASH_SECTOR_SIZE;
+                    u32 runningSum = 0;
+                    u32 numBytesReceived = 0;
+
                 	// Clear the input buffer
                 	FlushRx(base);
 
@@ -162,8 +165,11 @@ static void ExecuteCmd(const char const *input, const u32 base)
 							u8 rx = IORD_FIFOED_AVALON_UART_RXDATA(base);
 							runningSum += rx;
 							buffer[bufferIndex++] = rx;
+							numBytesReceived++;
+	                        if (numBytesReceived >= length)
+	                            break;
                     	}
-                        if (bufferIndex >= length)
+                        if (numBytesReceived >= length)
                             break;
                     }
 
@@ -172,11 +178,48 @@ static void ExecuteCmd(const char const *input, const u32 base)
                         SendStr(NO_ANSWER, base);
                     else
                     {
-                        alt_flash_fd* fd = EPCS_OpenFlash(SERIAL_FLASH_NAME);
-                        if (0 == EPCS_WriteFlash(fd, startAddr, (u32)buffer, length))
-                            SendStr(YES_ANSWER, base);
-                        else
-                            SendStr(NO_ANSWER, base);
+                    	// If we don't have a full sector worth of data, then ACK and wait for more
+                    	if (bufferIndex != FLASH_SECTOR_SIZE)
+                    		SendStr(YES_ANSWER, base);
+                    	else
+                    	{
+                    		u32 totalWriteBufferChecksum = 0;
+                    		int i;
+                    		for (i=0; i<sizeof(buffer); i++)
+                    		{
+                    			totalWriteBufferChecksum += buffer[i];
+                    		}
+
+							alt_flash_fd* fd = alt_flash_open_dev(SERIAL_FLASH_NAME);
+							if (NULL == fd)
+								SendStr(NO_ANSWER, base);
+							else
+							{
+								u32 sectorStartAddr = (startAddr / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
+								if (0 == alt_write_flash(fd, sectorStartAddr, buffer, length))
+								{
+									memset(buffer, 0x99, sizeof(buffer));
+									if (0 == alt_read_flash(fd, sectorStartAddr, buffer, sizeof(buffer)))
+									{
+			                    		u32 totalReadBufferChecksum = 0;
+			                    		for (i=0; i<sizeof(buffer); i++)
+			                    		{
+			                    			totalReadBufferChecksum += buffer[i];
+			                    		}
+			                    		if (totalReadBufferChecksum == totalWriteBufferChecksum)
+											SendStr(YES_ANSWER, base);
+			                    		else
+											SendStr(NO_ANSWER, base);
+									}
+		                    		else
+										SendStr(NO_ANSWER, base);
+								}
+								else
+									SendStr(NO_ANSWER, base);
+
+								alt_flash_close_dev(fd);
+							}
+                    	}
                     }
                 }
             }
@@ -210,7 +253,7 @@ int main(void)
     FlushRx(UART_BASE);
     FlushTx(UART_BASE);
     
-    #define MAX_CMD_LEN 16
+    #define MAX_CMD_LEN 64
     char cmd[MAX_CMD_LEN];
     s8 cmdIndex = 0;
 
